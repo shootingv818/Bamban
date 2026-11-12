@@ -1,0 +1,20 @@
+# Capture artifacts — THESE CONTAIN LIVE SECRETS. Never commit them.
+artifacts/
+*.har
+*.har.zip
+trace.zip
+storage_state.json
+.auth/
+
+# Secrets / runtime
+.env
+.otp
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/

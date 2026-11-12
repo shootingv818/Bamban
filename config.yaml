@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Bamban — capture phase configuration
+# ---------------------------------------------------------------------------
+# This phase needs NO credentials. You log in by hand in the browser window;
+# the tool only observes and records. Nothing here is secret.
+# ---------------------------------------------------------------------------
+
+bank:
+  base_url: "https://bsb.bmi.ir"
+  login_path: "/"          # relative to base_url; adjust if the login page differs
+
+browser:
+  headless: false          # MUST be visible so you can log in and click around
+  slow_mo_ms: 0            # e.g. 100 to slow actions while watching
+  locale: "fa-IR"
+  timezone: "Asia/Tehran"
+
+timeouts:
+  navigation_ms: 60000     # the bank portal can be slow; keep this generous
+
+output:
+  artifacts_dir: "artifacts"   # each run -> artifacts/<timestamp>/
+  logs_dir: "logs"
+
+capture:
+  # Only these hosts are written into the SHAREABLE endpoint_map.json.
+  # (raw.har still records everything, but it stays local and git-ignored.)
+  # Empty = auto: the base_url host plus any host containing "bmi.ir".
+  include_hosts: []
