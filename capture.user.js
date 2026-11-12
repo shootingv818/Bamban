@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Bamban Capture (redacted)
 // @namespace    bamban
-// @version      0.1.0
-// @description  Records your own session's XHR/fetch and exports a REDACTED endpoint map (no secret values). Phone-friendly: load it in a Chromium browser that accepts user scripts (e.g. Quetta), browse, tap the button, send the file.
+// @version      0.2.0
+// @description  Records your own session's XHR/fetch and exports a REDACTED endpoint map (no secret values). Injects into the page's MAIN world so it works in browsers that run user scripts in an isolated world (e.g. Quetta).
 // @match        *://*/*
 // @run-at       document-start
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/shootingv818/Bamban/feat/capture-tool/capture.user.js
+// @updateURL    https://raw.githubusercontent.com/shootingv818/Bamban/feat/capture-tool/capture.user.js
 // ==/UserScript==
 
 /*
@@ -17,9 +19,17 @@
  *    (field names kept, every value replaced by its type). No real values,
  *    cookies, tokens, balances or account numbers are ever written out.
  *  - Redaction mirrors bamban/redact.py and is unit-tested with node.
+ *
+ * v0.2.0: many Chromium user-script runners (Quetta included) execute the
+ * script in an ISOLATED world, where overriding window.fetch does NOT affect
+ * the real page. So we inject the whole payload as a <script> into the page's
+ * MAIN world, where the overrides actually take effect.
  */
-(function () {
+
+function bambanPageMain() {
   "use strict";
+  if (window.__bambanInstalled) return;
+  window.__bambanInstalled = true;
 
   var MASK = "<redacted>";
   var entries = [];
@@ -54,7 +64,7 @@
     }
     if (t === "boolean") return "bool";
     if (t === "number") return "num";
-    return "str"; // strings and anything else become an opaque type token
+    return "str";
   }
 
   function shapeJson(text) {
@@ -81,6 +91,14 @@
     updateBtn();
   }
 
+  function headerOf(headers, name) {
+    try {
+      if (headers && typeof headers.get === "function") return headers.get(name) || "";
+      if (headers) for (var k in headers) if (k.toLowerCase() === name) return headers[k];
+    } catch (e) {}
+    return "";
+  }
+
   // ---- hook fetch -------------------------------------------------------
   var origFetch = window.fetch;
   if (origFetch) {
@@ -105,14 +123,6 @@
         return res;
       });
     };
-  }
-
-  function headerOf(headers, name) {
-    try {
-      if (typeof headers.get === "function") return headers.get(name) || "";
-      for (var k in headers) if (k.toLowerCase() === name) return headers[k];
-    } catch (e) {}
-    return "";
   }
 
   // ---- hook XMLHttpRequest ---------------------------------------------
@@ -187,4 +197,18 @@
 
   if (document.body) mkBtn();
   else document.addEventListener("DOMContentLoaded", mkBtn);
+}
+
+// ---- inject bambanPageMain into the page's MAIN world ---------------------
+(function inject() {
+  try {
+    var s = document.createElement("script");
+    s.textContent = "(" + bambanPageMain.toString() + ")();";
+    (document.documentElement || document.head || document.body).appendChild(s);
+    s.remove();
+  } catch (e) {
+    // If injection is blocked (e.g. a strict Content-Security-Policy), the
+    // green button will NOT appear — that is the signal to switch to a
+    // network-level tool (Reqable) instead.
+  }
 })();
